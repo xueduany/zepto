@@ -103,6 +103,9 @@
     script.onerror = function() { abort('error') }
 
     script.src = options.url.replace(/=\?/, '=' + callbackName)
+    //add script charset support
+    if (options.charset){ script.charset = options.charset;}
+    
     $('head').append(script)
 
     if (options.timeout > 0) abortTimeout = setTimeout(function(){
@@ -266,6 +269,7 @@
     var hasData = !$.isFunction(data)
     return {
       url:      url,
+      charset:  hasData && data.charset ? data.charset : undefined,
       data:     hasData  ? data : undefined,
       success:  !hasData ? data : $.isFunction(success) ? success : undefined,
       dataType: hasData  ? dataType || success : success
