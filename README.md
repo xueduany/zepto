@@ -1,3 +1,8 @@
+# Zepto.js修改版
+* zepto.js 修改加入对于-webkit-前缀，在IE下，转化为-ms-前缀
+* ajax.js 修改加入对于jsonp的charset设置支持，以及对于CORS的ajax支持，在option中传入withCredentials为true
+* event.js 加入对于IE下对于touch的兼容和修正
+
 # Zepto.js – a minimalist JavaScript library
 
 Zepto is a minimalist JavaScript library for modern browsers with a
