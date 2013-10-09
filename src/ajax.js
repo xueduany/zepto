@@ -246,6 +246,16 @@
         ajaxError(null, 'timeout', xhr, settings)
       }, settings.timeout)
 
+    /**
+     * addisonxue hacked
+     * add CORS support, detail for http://www.w3.org/TR/cors/
+     */
+    if (settings.withCredentials) {
+      try{
+        xhr.withCredentials = true;
+      } catch (e) {
+      }
+    }
     // avoid sending empty string (#319)
     xhr.send(settings.data ? settings.data : null)
     return xhr
