@@ -3,8 +3,17 @@
 //     Zepto.js may be freely distributed under the MIT license.
 
 ;(function($){
-  var $$ = $.zepto.qsa, handlers = {}, _zid = 1, specialEvents={},
-      hover = { mouseenter: 'mouseover', mouseleave: 'mouseout' }
+  var $$ = $.zepto.qsa, handlers = {}, _zid = 1, specialEvents = {}, hover = {
+    mouseenter : 'mouseover',
+    mouseleave : 'mouseout',
+    /**
+     * addisonxue hacked
+     * add MSIE msPointer event support
+     */
+    touchdown : window.navigator.msPointerEnabled ? 'MSPointerDown' : 'touchdown',
+    touchmove : window.navigator.msPointerEnabled ? 'MSPointerMove' : 'touchmove',
+    touchend : window.navigator.msPointerEnabled ? 'MSPointerCancel' : 'touchend'
+  }
 
   specialEvents.click = specialEvents.mousedown = specialEvents.mouseup = specialEvents.mousemove = 'MouseEvents'
 
