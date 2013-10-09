@@ -3,6 +3,7 @@
 //     Zepto.js may be freely distributed under the MIT license.
 
 var Zepto = (function() {
+  var _isIE = /MSIE/.test(navigator.userAgent);
   var undefined, key, $, classList, emptyArray = [], slice = emptyArray.slice, filter = emptyArray.filter,
     document = window.document,
     elementDisplay = {}, classCache = {},
@@ -620,6 +621,27 @@ var Zepto = (function() {
       }
     },
     css: function(property, value){
+      /**
+       * addisonxue hacked
+       * add MSIE Css3 support
+       * modify -webkit- prefix with -ms-
+       */
+      if(_isIE){
+        if (typeof property == 'string' && property.indexOf('-webkit-') == 0) {
+          property = '-ms-' + property.substring(8);
+        } else if (typeof property == 'object') {
+          var _pro = {};
+          for ( var p in property) {
+            if (p.indexOf('-webkit-') == 0) {
+              _pro['-ms-' + p.substring(8)] = property[p];
+            } else {
+              _pro[p] = property[p];
+            }
+          }
+          property = _pro;
+        }
+      }
+      
       if (arguments.length < 2) {
         var element = this[0], computedStyle = getComputedStyle(element, '')
         if(!element) return
