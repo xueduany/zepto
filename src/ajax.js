@@ -291,6 +291,12 @@
     options.dataType = 'json'
     return $.ajax(options)
   }
+  //alias to $.getJSON, but it`s a jsonp, means that accept a pure string request not include 'callback=?'
+  $.getScript = function(url, data, success){
+    var options = parseArguments.apply(null, arguments)
+    options.dataType = 'jsonp'
+    return $.ajax(options)
+  }
 
   $.fn.load = function(url, data, success){
     if (!this.length) return this
