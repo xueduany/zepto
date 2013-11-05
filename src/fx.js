@@ -51,6 +51,27 @@
   }
 
   $.fn.anim = function(properties, duration, ease, callback, delay){
+    /**
+     * addisonxue hacked
+     * add MSIE Css3 support
+     * modify -webkit- prefix with -ms-
+     */
+    if(/MSIE/.test(navigator.userAgent)){
+      if (typeof properties == 'string' && properties.indexOf('-webkit-') == 0) {
+        properties = '-ms-' + properties.substring(8);
+      } else if (typeof properties == 'object') {
+        var _pro = {};
+        for ( var p in properties) {
+          if (p.indexOf('-webkit-') == 0) {
+            _pro['-ms-' + p.substring(8)] = properties[p];
+          } else {
+            _pro[p] = properties[p];
+          }
+        }
+        properties = _pro;
+      }
+    }
+    
     var key, cssValues = {}, cssProperties, transforms = '',
         that = this, wrappedCallback, endEvent = $.fx.transitionEnd
 
