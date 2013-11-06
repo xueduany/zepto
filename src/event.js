@@ -10,7 +10,7 @@
      * addisonxue hacked
      * add MSIE msPointer event support
      */
-    touchdown : window.navigator.msPointerEnabled ? 'MSPointerDown' : 'touchdown',
+    touchstart : window.navigator.msPointerEnabled ? 'MSPointerDown' : 'touchstart',
     touchmove : window.navigator.msPointerEnabled ? 'MSPointerMove' : 'touchmove',
     touchend : window.navigator.msPointerEnabled ? 'MSPointerCancel' : 'touchend'
   }
