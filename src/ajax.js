@@ -101,10 +101,11 @@
     }
 
     script.onerror = function() { abort('error') }
-
-    script.src = options.url.replace(/=\?/, '=' + callbackName)
+    
     //add script charset support
     if (options.charset){ script.charset = options.charset;}
+    
+    script.src = options.url.replace(/=\?/, '=' + callbackName)
     
     $('head').append(script)
 
@@ -292,10 +293,14 @@
     return $.ajax(options)
   }
   //alias to $.getJSON, but it`s a jsonp, means that accept a pure string request not include 'callback=?'
-  $.getScript = function(url, data, success){
-    var options = parseArguments.apply(null, arguments)
-    options.dataType = 'jsonp'
-    return $.ajax(options)
+  $.getScript = function(url, success, charset){
+    return $.ajax({
+      url:      url,
+      charset:  charset,
+      data:     undefined,
+      success:  success,
+      dataType: 'jsonp'
+    })
   }
 
   $.fn.load = function(url, data, success){
