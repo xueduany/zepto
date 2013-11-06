@@ -294,6 +294,10 @@
   }
   //alias to $.getJSON, but it`s a jsonp, means that accept a pure string request not include 'callback=?'
   $.getScript = function(url, success, charset){
+    if(typeof(success) == 'string' && charset == null){
+      charset = success;
+      success = null;
+    }
     return $.ajax({
       url:      url,
       charset:  charset,
