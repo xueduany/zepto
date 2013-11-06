@@ -269,7 +269,7 @@
     var hasData = !$.isFunction(data)
     return {
       url:      url,
-      charset:  hasData && data.charset ? data.charset : undefined,
+      charset:  hasData && data && data.charset ? data.charset : undefined,
       data:     hasData  ? data : undefined,
       success:  !hasData ? data : $.isFunction(success) ? success : undefined,
       dataType: hasData  ? dataType || success : success
