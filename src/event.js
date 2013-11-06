@@ -12,7 +12,8 @@
      */
     touchstart : window.navigator.msPointerEnabled ? 'MSPointerDown' : 'touchstart',
     touchmove : window.navigator.msPointerEnabled ? 'MSPointerMove' : 'touchmove',
-    touchend : window.navigator.msPointerEnabled ? 'MSPointerCancel' : 'touchend'
+    touchend : window.navigator.msPointerEnabled ? 'MSPointerCancel' : 'touchend',
+    touchcancel : window.navigator.msPointerEnabled ? 'MSPointerCancel' : 'touchcancel'
   }
 
   specialEvents.click = specialEvents.mousedown = specialEvents.mouseup = specialEvents.mousemove = 'MouseEvents'
