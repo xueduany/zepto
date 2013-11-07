@@ -191,7 +191,7 @@
     if (dataType == 'jsonp' || hasPlaceholder) {
       if (!hasPlaceholder)
         settings.url = appendQuery(settings.url,
-          settings.jsonp ? (settings.jsonp + '=?') : settings.jsonp === false ? '' : 'callback=?')
+          settings.jsonp ? (settings.jsonp + '=?') : settings.jsonp === false ? '' : (settings.url.indexOf('callback=') > -1 ? '' : 'callback=?'))
       return $.ajaxJSONP(settings)
     }
 
@@ -300,6 +300,7 @@
     }
     return $.ajax({
       url:      url,
+      type:     'GET',
       charset:  charset,
       data:     undefined,
       success:  success,
