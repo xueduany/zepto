@@ -74,7 +74,7 @@
 
     var _callbackName = options.jsonpCallback,
       callbackName = ($.isFunction(_callbackName) ?
-        _callbackName() : _callbackName) || ('jsonp' + (++jsonpID)),
+        _callbackName() : _callbackName) || ('jsonp' + (Date.now())),
       script = document.createElement('script'),
       cleanup = function() {
         clearTimeout(abortTimeout)
