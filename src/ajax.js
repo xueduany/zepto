@@ -74,7 +74,7 @@
 
     var _callbackName = options.jsonpCallback,
       callbackName = ($.isFunction(_callbackName) ?
-        _callbackName() : _callbackName) || ('jsonp' + (Date.now())),
+        _callbackName() : _callbackName) || ('jsonp' + (++jsonpID)),
       script = document.createElement('script'),
       cleanup = function() {
         clearTimeout(abortTimeout)
@@ -95,7 +95,7 @@
       return false
     }
 
-    window[callbackName] = function(data){
+    window[callbackName] = window[callbackName] || function(data){
       cleanup()
       ajaxSuccess(data, xhr, options)
     }
@@ -189,9 +189,14 @@
 
     var dataType = settings.dataType, hasPlaceholder = /=\?/.test(settings.url)
     if (dataType == 'jsonp' || hasPlaceholder) {
-      if (!hasPlaceholder)
+      if (!hasPlaceholder){
         settings.url = appendQuery(settings.url,
           settings.jsonp ? (settings.jsonp + '=?') : settings.jsonp === false ? '' : (settings.url.indexOf('callback=') > -1 ? '' : 'callback=?'))
+        var A_callback = settings.url.match(new RegExp((settings.jsonp ? settings.jsonp : 'callback') + '=(\\w+)','i'));
+        if(A_callback.length >= 2){
+          settings.jsonpCallback = A_callback[1];
+        }
+      }
       return $.ajaxJSONP(settings)
     }
 

@@ -56,7 +56,8 @@
           touch.el.trigger('swipe'+ swipeDirectionFromVelocity)
         }
       })
-      .on('touchstart MSPointerDown', function(e){
+      //.on('touchstart MSPointerDown', function(e){
+      .on('touchstart', function(e){
         if(e.type == 'MSPointerDown' && !isPrimaryTouch(e)) return;
         firstTouch = e.type == 'MSPointerDown' ? e : e.touches[0]
         now = Date.now()
@@ -72,7 +73,8 @@
         // adds the current touch contact for IE gesture recognition
         if (gesture && e.type == 'MSPointerDown') gesture.addPointer(e.pointerId);
       })
-      .on('touchmove MSPointerMove', function(e){
+      //.on('touchmove MSPointerMove', function(e){
+      .on('touchmove', function(e){
         if(e.type == 'MSPointerMove' && !isPrimaryTouch(e)) return;
         firstTouch = e.type == 'MSPointerMove' ? e : e.touches[0]
         cancelLongTap()
@@ -81,8 +83,8 @@
 
         deltaX += Math.abs(touch.x1 - touch.x2)
         deltaY += Math.abs(touch.y1 - touch.y2)
-      })
-      .on('touchend MSPointerUp', function(e){
+      });
+      $(document).on((window.navigator.msPointerEnabled ? 'MSPointerUp' : 'touchend'), function(e){
         if(e.type == 'MSPointerUp' && !isPrimaryTouch(e)) return;
         cancelLongTap()
 
@@ -132,10 +134,11 @@
           deltaX = deltaY = 0
 
       })
+      
       // when the browser window loses focus,
       // for example when a modal dialog is shown,
       // cancel all ongoing events
-      .on('touchcancel MSPointerCancel', cancelAll)
+      $(document).on('touchcancel', cancelAll)
 
     // scrolling the window indicates intention of the user
     // to scroll, not tap or swipe, so cancel all ongoing events
