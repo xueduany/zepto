@@ -191,9 +191,9 @@
     if (dataType == 'jsonp' || hasPlaceholder) {
       if (!hasPlaceholder){
         settings.url = appendQuery(settings.url,
-          settings.jsonp ? (settings.jsonp + '=?') : settings.jsonp === false ? '' : (settings.url.indexOf('callback=') > -1 ? '' : 'callback=?'))
+          settings.jsonp ? (settings.jsonp + '=?') : settings.jsonp === false ? '' : (settings.url.indexOf('callback=') > -1 ? '' : (settings.success == null || settings.success == empty ? '' : 'callback=?')))
         var A_callback = settings.url.match(new RegExp((settings.jsonp ? settings.jsonp : 'callback') + '=(\\w+)','i'));
-        if(A_callback.length >= 2){
+        if(A_callback != null && A_callback.length >= 2){
           settings.jsonpCallback = A_callback[1];
         }
       }
