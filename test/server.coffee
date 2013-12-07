@@ -20,6 +20,36 @@ dump = (obj) ->
   obj = JSON.stringify(obj) if obj and typeof obj isnt "string"
   obj
 
+cleanTrace = (traceStr) ->
+  trace = traceStr.split("\n")
+  filtered = []
+  for line in trace
+    if /\.html:/.test line
+      line = line.replace(/^.+?@/, '')
+      line = line.replace(/http:\/\/.+?\//, '')
+      line = line.replace(/(:\d+):\d+$/, '$1')
+      filtered.push line
+  filtered
+
+browser = (ua) ->
+  if m = ua.match /(Android .+?);/
+    m[1]
+  else if m = ua.match /(iPhone|iPad|iPod).*?OS ([\d_]+)/
+    'iOS ' + m[2].replace(/_/g, '.')
+  else if m = ua.match /(Chrome\/[\d.]+)/
+    m[1].replace '/', ' '
+  else if m = ua.match /(Safari\/[\d.]+)/
+    m[1].replace '/', ' '
+  else if m = ua.match /(Firefox\/[\d.]+)/
+    m[1].replace '/', ' '
+  else if m = ua.match /\bMS(IE [\d.]+)/
+    m[1]
+  else
+    ua
+
+app.all '/', (req, res) ->
+  res.redirect '/test'
+
 app.all '/test/echo', (req, res) ->
   res.set 'Cache-Control', 'no-cache'
   res.send """
@@ -56,6 +86,26 @@ app.all '/test/slow', (req, res) ->
   setTimeout ->
     res.send 'DONE'
   , 200
+
+app.get '/test/cached', (req, res) ->
+  res.set 'Cache-Control', 'max-age=2'
+  res.set 'Expires', new Date(Date.now() + 2000).toUTCString()
+  now = new Date()
+  res.send now.getTime().toString()
+
+app.get '/test/auth', (req, res) ->
+  if req.headers.authorization is 'Basic emVwdG86ZG9nZQ=='
+    res.send 200
+  else
+    res.set 'WWW-Authenticate', "Basic realm=\"#{req.query.realm}\""
+    res.send 401
+
+app.post '/test/log', (req, res) ->
+  params = req.body
+  trace = cleanTrace params.trace
+  console.log "[%s] %s: %s", browser(req.headers['user-agent']), params.name, params.message
+  console.log trace.join("\n").replace(/^/mg, '  ') if trace.length
+  res.send 200
 
 app.all '/test/error', (req, res) ->
   res.send 500, 'BOOM'

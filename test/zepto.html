@@ -4,12 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <link rel="stylesheet" href="test.css">
-  <title>Zepto DOM unit tests</title>
+  <title>Zepto Core unit tests</title>
   <script src="../vendor/evidence.js"></script>
   <script src="evidence_runner.js"></script>
-  <script src="../src/zepto.js"></script>
-  <script src="../src/event.js"></script>
-  <script src="../src/ie.js"></script>
+  <script>
+    // avoid caching
+    (function(){
+      function load(scripts){
+        scripts.split(' ').forEach(function(script){
+          document.write('<script src="../src/'+script+'.js?'+(+new Date)+'"></scr'+'ipt>')
+        })
+      }
+
+      load('zepto event ie')
+    })()
+  </script>
   <style>
     #get_style_element {
       font-size: 48px;
@@ -18,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h1>Zepto DOM unit tests</h1>
+  <h1>Zepto Core unit tests</h1>
   <p id="results">
     Running… see browser console for results
   </p>
@@ -1844,8 +1853,13 @@
           $('<select multiple><option selected>1</option><option value=2 selected="selected">a</option><option>3</option></select>')
         t.assertEqualCollection(['1','2'], multiple.val())
 
+        // FIXME
+        // This is the "approved" way of de-selecting an option
+        // Unfortunately, this fails on Chrome 29 for Android
         multiple.find('option')[0].selected = false
-        t.assertEqualCollection(['2'], multiple.val())
+
+        t.assertEqualCollection(['2'], multiple.val(),
+          "Expected val() to reflect changes to selected options in a <select multiple> element")
       },
 
       testChaining: function(t){
@@ -1871,13 +1885,17 @@
         t.assertEqual('plugin!', el.innerHTML)
 
         // test if existing Zepto objects receive new plugins
-        var $some_element = $('#some_element')
-        $.fn.anotherplugin = function(){
-          return this.each(function(){ this.innerHTML = 'anotherplugin!' })
-        }
-        t.assert(typeof $some_element.anotherplugin == 'function')
-        $some_element.anotherplugin()
-        t.assertEqual('anotherplugin!', el.innerHTML)
+        if ('__proto__' in {}) {
+          var $some_element = $('#some_element')
+          $.fn.anotherplugin = function(){
+            return this.each(function(){ this.innerHTML = 'anotherplugin!' })
+          }
+          t.assert(typeof $some_element.anotherplugin == 'function')
+          $some_element.anotherplugin()
+          t.assertEqual('anotherplugin!', el.innerHTML)
+        } else
+          window.console && console.warn &&
+          console.warn("Browser doesn't support __proto__, skipping test of live extension of existing Zepto objects with plugins")
       },
 
       testAppendPrependBeforeAfter: function(t){
@@ -2497,7 +2515,7 @@
             return false
           })
           .bind('click', function (e) {
-            prevented = e.defaultPrevented
+            prevented = e.isDefaultPrevented()
           })
           .trigger('click')
 
@@ -2560,21 +2578,18 @@
       testTriggerEventCancelled: function(t){
         var event = $.Event('custom'),
           element = $('<div/>'),
-          defaultPrevented = false,
           isDefaultPrevented = false
 
         t.refute(event.isDefaultPrevented())
 
         element.bind('custom', function(e){
           e.preventDefault()
-          defaultPrevented = e.defaultPrevented
           isDefaultPrevented = e.isDefaultPrevented()
         })
 
         element.trigger(event)
 
         t.assertTrue(event.isDefaultPrevented())
-        t.assertTrue(defaultPrevented)
         t.assertTrue(isDefaultPrevented)
       },
 
@@ -2595,10 +2610,6 @@
         $(form).bind('submit', function(e) {
           executed.push("2")
           t.assertEqual(form, e.target)
-          // TODO
-          // Android 2.3 doesn't support stopImmediatePropagation,
-          // so the tests throws an error. Ideally Zepto should emulate
-          // stopImmediatePropagation on browsers that don't support it.
           e.stopImmediatePropagation()
           return 2
         })

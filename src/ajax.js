@@ -45,16 +45,18 @@
 
     triggerGlobal(settings, context, 'ajaxSend', [xhr, settings])
   }
-  function ajaxSuccess(data, xhr, settings) {
+  function ajaxSuccess(data, xhr, settings, deferred) {
     var context = settings.context, status = 'success'
     settings.success.call(context, data, status, xhr)
+    if (deferred) deferred.resolveWith(context, [data, status, xhr])
     triggerGlobal(settings, context, 'ajaxSuccess', [xhr, settings, data])
     ajaxComplete(status, xhr, settings)
   }
   // type: "timeout", "error", "abort", "parsererror"
-  function ajaxError(error, type, xhr, settings) {
+  function ajaxError(error, type, xhr, settings, deferred) {
     var context = settings.context
     settings.error.call(context, xhr, type, error)
+    if (deferred) deferred.rejectWith(context, [xhr, type, error])
     triggerGlobal(settings, context, 'ajaxError', [xhr, settings, error || type])
     ajaxComplete(type, xhr, settings)
   }
@@ -69,45 +71,50 @@
   // Empty function, used as default callback
   function empty() {}
 
-  $.ajaxJSONP = function(options){
+  $.ajaxJSONP = function(options, deferred){
     if (!('type' in options)) return $.ajax(options)
 
     var _callbackName = options.jsonpCallback,
       callbackName = ($.isFunction(_callbackName) ?
         _callbackName() : _callbackName) || ('jsonp' + (++jsonpID)),
       script = document.createElement('script'),
-      cleanup = function() {
-        clearTimeout(abortTimeout)
-        $(script).remove()
-        delete window[callbackName]
-      },
-      abort = function(type){
-        cleanup()
-        // In case of manual abort or timeout, keep an empty function as callback
-        // so that the SCRIPT tag that eventually loads won't result in an error.
-        if (!type || type == 'timeout') window[callbackName] = empty
-        ajaxError(null, type || 'abort', xhr, options)
+      originalCallback = window[callbackName],
+      responseData,
+      abort = function(errorType) {
+        $(script).triggerHandler('error', errorType || 'abort')
       },
       xhr = { abort: abort }, abortTimeout
 
+    if (deferred) deferred.promise(xhr)
+
+    $(script).on('load error', function(e, errorType){
+      clearTimeout(abortTimeout)
+      $(script).off().remove()
+
+      if (e.type == 'error' || !responseData) {
+        ajaxError(null, errorType || 'error', xhr, options, deferred)
+      } else {
+        ajaxSuccess(responseData[0], xhr, options, deferred)
+      }
+
+      window[callbackName] = originalCallback
+      if (responseData && $.isFunction(originalCallback))
+        originalCallback(responseData[0])
+
+      originalCallback = responseData = undefined
+    })
+
     if (ajaxBeforeSend(xhr, options) === false) {
       abort('abort')
-      return false
+      return xhr
     }
 
-    window[callbackName] = window[callbackName] || function(data){
-      cleanup()
-      ajaxSuccess(data, xhr, options)
+    window[callbackName] = window[callbackName] || function(){
+      responseData = arguments
     }
 
-    script.onerror = function() { abort('error') }
-    
-    //add script charset support
-    if (options.charset){ script.charset = options.charset;}
-    
     script.src = options.url.replace(/=\?/, '=' + callbackName)
-    
-    $('head').append(script)
+    document.head.appendChild(script)
 
     if (options.timeout > 0) abortTimeout = setTimeout(function(){
       abort('timeout')
@@ -172,11 +179,12 @@
     if (options.processData && options.data && $.type(options.data) != "string")
       options.data = $.param(options.data, options.traditional)
     if (options.data && (!options.type || options.type.toUpperCase() == 'GET'))
-      options.url = appendQuery(options.url, options.data)
+      options.url = appendQuery(options.url, options.data), options.data = null
   }
 
   $.ajax = function(options){
-    var settings = $.extend({}, options || {})
+    var settings = $.extend({}, options || {}),
+        deferred = $.Deferred && $.Deferred()
     for (key in $.ajaxSettings) if (settings[key] === undefined) settings[key] = $.ajaxSettings[key]
 
     ajaxStart(settings)
@@ -198,13 +206,15 @@
           settings.jsonpCallback = A_callback[1];
         }
       }
-      return $.ajaxJSONP(settings)
+      return $.ajaxJSONP(settings, deferred)
     }
 
     var mime = settings.accepts[dataType],
         baseHeaders = { },
         protocol = /^([\w-]+:)\/\//.test(settings.url) ? RegExp.$1 : window.location.protocol,
         xhr = settings.xhr(), abortTimeout
+
+    if (deferred) deferred.promise(xhr)
 
     if (!settings.crossDomain) baseHeaders['X-Requested-With'] = 'XMLHttpRequest'
     baseHeaders['Accept'] = mime || '*/*'
@@ -232,30 +242,31 @@
             else if (dataType == 'json') result = blankRE.test(result) ? null : $.parseJSON(result)
           } catch (e) { error = e }
 
-          if (error) ajaxError(error, 'parsererror', xhr, settings)
-          else ajaxSuccess(result, xhr, settings)
+          if (error) ajaxError(error, 'parsererror', xhr, settings, deferred)
+          else ajaxSuccess(result, xhr, settings, deferred)
         } else {
-          ajaxError(xhr.statusText || null, xhr.status ? 'error' : 'abort', xhr, settings)
+          ajaxError(xhr.statusText || null, xhr.status ? 'error' : 'abort', xhr, settings, deferred)
         }
       }
     }
 
     if (ajaxBeforeSend(xhr, settings) === false) {
       xhr.abort()
-      return false
+      ajaxError(null, 'abort', xhr, settings, deferred)
+      return xhr
     }
 
     if (settings.xhrFields) for (name in settings.xhrFields) xhr[name] = settings.xhrFields[name]
 
     var async = 'async' in settings ? settings.async : true
-    xhr.open(settings.type, settings.url, async)
+    xhr.open(settings.type, settings.url, async, settings.username, settings.password)
 
     for (name in settings.headers) xhr.setRequestHeader(name, settings.headers[name])
 
     if (settings.timeout > 0) abortTimeout = setTimeout(function(){
         xhr.onreadystatechange = empty
         xhr.abort()
-        ajaxError(null, 'timeout', xhr, settings)
+        ajaxError(null, 'timeout', xhr, settings, deferred)
       }, settings.timeout)
 
     /**

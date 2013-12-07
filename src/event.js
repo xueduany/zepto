@@ -9,6 +9,8 @@
       isString = function(obj){ return typeof obj == 'string' },
       handlers = {},
       specialEvents={},
+      focusinSupported = 'onfocusin' in window,
+      focus = { focus: 'focusin', blur: 'focusout' },
       hover = { mouseenter: 'mouseover', mouseleave: 'mouseout',
           /**
            * addisonxue hacked
@@ -46,12 +48,12 @@
 
   function eventCapture(handler, captureSetting) {
     return handler.del &&
-      (handler.e == 'focus' || handler.e == 'blur') ||
+      (!focusinSupported && (handler.e in focus)) ||
       !!captureSetting
   }
 
   function realEvent(type) {
-    return hover[type] || type
+    return hover[type] || (focusinSupported && focus[type]) || type
   }
 
   function add(element, events, fn, data, selector, delegator, capture){
@@ -70,6 +72,8 @@
       handler.del   = delegator
       var callback  = delegator || fn
       handler.proxy = function(e){
+        e = compatible(e)
+        if (e.isImmediatePropagationStopped()) return
         e.data = data
         var result = callback.apply(element, e._args == undefined ? [e] : [e].concat(e._args))
         if (result === false) e.preventDefault(), e.stopPropagation()
@@ -118,43 +122,40 @@
 
   var returnTrue = function(){return true},
       returnFalse = function(){return false},
-      ignoreProperties = /^([A-Z]|layer[XY]$)/,
+      ignoreProperties = /^([A-Z]|returnValue$|layer[XY]$)/,
       eventMethods = {
         preventDefault: 'isDefaultPrevented',
         stopImmediatePropagation: 'isImmediatePropagationStopped',
         stopPropagation: 'isPropagationStopped'
       }
+
+  function compatible(event, source) {
+    if (source || !event.isDefaultPrevented) {
+      source || (source = event)
+
+      $.each(eventMethods, function(name, predicate) {
+        var sourceMethod = source[name]
+        event[name] = function(){
+          this[predicate] = returnTrue
+          return sourceMethod && sourceMethod.apply(source, arguments)
+        }
+        event[predicate] = returnFalse
+      })
+
+      if (source.defaultPrevented !== undefined ? source.defaultPrevented :
+          'returnValue' in source ? source.returnValue === false :
+          source.getPreventDefault && source.getPreventDefault())
+        event.isDefaultPrevented = returnTrue
+    }
+    return event
+  }
+
   function createProxy(event) {
     var key, proxy = { originalEvent: event }
     for (key in event)
       if (!ignoreProperties.test(key) && event[key] !== undefined) proxy[key] = event[key]
 
-    $.each(eventMethods, function(name, predicate) {
-      proxy[name] = function(){
-        this[predicate] = returnTrue
-        return event[name].apply(event, arguments)
-      }
-      proxy[predicate] = returnFalse
-    })
-
-    if (event.defaultPrevented !== undefined ? event.defaultPrevented :
-        event.getPreventDefault && event.getPreventDefault())
-      proxy.isDefaultPrevented = returnTrue
-    return proxy
-  }
-
-  function fix(event) {
-    if (!('isDefaultPrevented' in event)) {
-      var original = event.preventDefault
-      event.defaultPrevented = false
-      event.isDefaultPrevented = returnFalse
-      event.preventDefault = function(){
-        event.defaultPrevented = true
-        event.isDefaultPrevented = returnTrue
-        original.call(event)
-      }
-    }
-    return event
+    return compatible(proxy, event)
   }
 
   $.fn.delegate = function(selector, event, callback){
@@ -182,10 +183,12 @@
       return $this
     }
 
-    if (!isString(selector) && !isFunction(callback))
+    if (!isString(selector) && !isFunction(callback) && callback !== false)
       callback = data, data = selector, selector = undefined
-    if (isFunction(data))
+    if (isFunction(data) || data === false)
       callback = data, data = undefined
+
+    if (callback === false) callback = returnFalse
 
     return $this.each(function(_, element){
       if (one) autoRemove = function(e){
@@ -195,7 +198,7 @@
 
       if (selector) delegator = function(e){
         var evt, match = $(e.target).closest(selector, element).get(0)
-        if (match) {
+        if (match && match !== element) {
           evt = $.extend(createProxy(e), {currentTarget: match, liveFired: element})
           return (autoRemove || callback).apply(match, [evt].concat(slice.call(arguments, 1)))
         }
@@ -213,8 +216,10 @@
       return $this
     }
 
-    if (!isString(selector) && !isFunction(callback))
+    if (!isString(selector) && !isFunction(callback) && callback !== false)
       callback = selector, selector = undefined
+
+    if (callback === false) callback = returnFalse
 
     return $this.each(function(){
       remove(this, event, callback, selector)
@@ -222,7 +227,7 @@
   }
 
   $.fn.trigger = function(event, args){
-    event = (isString(event) || $.isPlainObject(event)) ? $.Event(event) : fix(event)
+    event = (isString(event) || $.isPlainObject(event)) ? $.Event(event) : compatible(event)
     event._args = args
     return this.each(function(){
       // items in the collection might not be DOM elements
@@ -236,7 +241,7 @@
   $.fn.triggerHandler = function(event, args){
     var e, result
     this.each(function(i, element){
-      e = createProxy(isString(event) ? $.Event(event) : fix(event))
+      e = createProxy(isString(event) ? $.Event(event) : event)
       e._args = args
       e.target = element
       $.each(findHandlers(element, event.type || event), function(i, handler){
@@ -274,7 +279,7 @@
     var event = document.createEvent(specialEvents[type] || 'Events'), bubbles = true
     if (props) for (var name in props) (name == 'bubbles') ? (bubbles = !!props[name]) : (event[name] = props[name])
     event.initEvent(type, bubbles, true)
-    return fix(event)
+    return compatible(event)
   }
 
 })(Zepto)

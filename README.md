@@ -66,6 +66,21 @@ Zepto modules are individual files in the "src/" directory.
     <td>Event handling via <code>on()</code> &amp; <code>off()</code></td>
   </tr>
   <tr>
+    <th><a href="src/ajax.js#files">ajax</a></th>
+    <td>✔</td>
+    <td>XMLHttpRequest and JSONP functionality</td>
+  </tr>
+  <tr>
+    <th><a href="src/form.js#files">form</a></th>
+    <td>✔</td>
+    <td>Serialize &amp; submit web forms</td>
+  </tr>
+  <tr>
+    <th><a href="src/ie.js#files">ie</a></th>
+    <td>✔</td>
+    <td>Support for Internet Explorer 10+ on the desktop and Windows Phone 8</td>
+  </tr>
+  <tr>
     <th><a href="src/detect.js#files">detect</a></th>
     <td></td>
     <td>Provides <code>$.os</code> and <code>$.browser</code> information</td>
@@ -82,16 +97,6 @@ Zepto modules are individual files in the "src/" directory.
       Animated <code>show</code>, <code>hide</code>, <code>toggle</code>,
       and <code>fade*()</code> methods.
     </td>
-  </tr>
-  <tr>
-    <th><a href="src/ajax.js#files">ajax</a></th>
-    <td>✔</td>
-    <td>XMLHttpRequest and JSONP functionality</td>
-  </tr>
-  <tr>
-    <th><a href="src/form.js#files">form</a></th>
-    <td>✔</td>
-    <td>Serialize &amp; submit web forms</td>
   </tr>
   <tr>
     <th><a href="src/assets.js#files">assets</a></th>
@@ -159,14 +164,6 @@ Zepto modules are individual files in the "src/" directory.
       (if they are missing) for compatibility with iOS 3.x.
     </td>
   </tr>
-  <tr>
-    <th><a href="src/ie.js#files">ie</a></th>
-    <td></td>
-    <td>
-      Experimental support for Internet Explorer 10+ on desktop and Windows Phone 8.
-      (Some tests are failing. Help us fix this!)
-    </td>
-  </tr>
 </tbody>
 </table>
 
@@ -205,17 +202,22 @@ You will need to install [PhantomJS][]. On OS X, that's easy:
 $ brew install phantomjs
 ~~~
 
-To run the test suite, these are all equivalent:
+To run the automated tests:
 
 ~~~ sh
 $ npm test
-$ ./make test
-$ script/test
 ~~~
 
-To manually run tests (all except for the "ajax" module) on a device,
-you can serve the whole Zepto folder on a web server and open
-`test/index.html` in the device's browser.
+To run a test server, which you can hit with your browsers and devices:
+
+~~~ sh
+$ npm start
+~~~
+
+Go to `http://your-ip-address:3000/` on your browser and follow the
+instructions. For your convenience test failures and exceptions will be
+reported to the the console you started the test server in (as well as
+the browser console if available).
 
   [zeptojs.com]: http://zeptojs.com
   [master]: https://github.com/madrobby/zepto/commits/master

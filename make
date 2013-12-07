@@ -2,7 +2,7 @@
 require 'shelljs/make'
 fs = require 'fs'
 
-version   = '1.1.0'
+version   = '1.1.1'
 zepto_js  = 'dist/zepto.js'
 zepto_min = 'dist/zepto.min.js'
 zepto_gz  = 'dist/zepto.min.gz'
@@ -19,7 +19,7 @@ target.all = ->
 target.test = ->
   test_app = require './test/server'
   server = test_app.listen port
-  exec "phantomjs test/runner.coffee 'http://localhost:#{port}/'", (code) ->
+  exec "phantomjs --disk-cache=true test/runner.coffee 'http://localhost:#{port}/'", (code) ->
     server.close -> exit(code)
 
 target[zepto_js] = ->

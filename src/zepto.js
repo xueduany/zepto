@@ -12,6 +12,7 @@ var Zepto = (function() {
     singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
     tagExpanderRE = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
     rootNodeRE = /^(?:body|html)$/i,
+    capitalRE = /([A-Z])/g,
 
     // special attributes that should be get/set via method calls
     methodAttributes = ['val', 'css', 'html', 'text', 'data', 'width', 'height', 'offset'],
@@ -622,13 +623,13 @@ var Zepto = (function() {
         })
     },
     data: function(name, value){
-      var data = this.attr('data-' + dasherize(name), value)
+      var data = this.attr('data-' + name.replace(capitalRE, '-$1').toLowerCase(), value)
       return data !== null ? deserializeValue(data) : undefined
     },
     val: function(value){
       return arguments.length === 0 ?
         (this[0] && (this[0].multiple ?
-           $(this[0]).find('option').filter(function(o){ return this.selected }).pluck('value') :
+           $(this[0]).find('option').filter(function(){ return this.selected }).pluck('value') :
            this[0].value)
         ) :
         this.each(function(idx){

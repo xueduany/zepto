@@ -4,15 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <link rel="stylesheet" href="test.css">
-  <title>Zepto event tests</title>
+  <title>Zepto Event unit tests</title>
   <script src="../vendor/evidence.js"></script>
   <script src="evidence_runner.js"></script>
-  <script src="../src/zepto.js"></script>
-  <script src="../src/event.js"></script>
-  <script src="../src/ie.js"></script>
+  <script>
+    // avoid caching
+    (function(){
+      function load(scripts){
+        scripts.split(' ').forEach(function(script){
+          document.write('<script src="../src/'+script+'.js?'+(+new Date)+'"></scr'+'ipt>')
+        })
+      }
+
+      load('zepto event ie')
+    })()
+  </script>
 </head>
 <body>
-  <h1>Zepto event tests</h1>
+  <h1>Zepto Event unit tests</h1>
   <p id="results">
     Running… see browser console for results
   </p>
@@ -149,13 +158,11 @@
         this.el
           .on('click', null, fn)
           .on('click', undefined, fn)
-          .on('click', false, fn)
 
         click(this.el)
-        t.assertEqual(3, log.length)
+        t.assertEqual(2, log.length)
         t.assertIdentical(null, log[0])
         t.assertIdentical(undefined, log[1])
-        t.assertIdentical(false, log[2])
       },
 
       testOffWithObject: function(t){
@@ -197,7 +204,7 @@
         })
 
         click(span)
-        t.assertEqual(true, isDefaultPrevented)
+        t.assertTrue(isDefaultPrevented, "isDefaultPrevented() value invalid for delegate proxy")
       },
 
       testEventsOnPlainObjects: function (t){
@@ -278,7 +285,148 @@
 
         this.el.trigger('myevent')
         t.assertIdentical(data, gotData)
+      },
+
+      testDelegateEventMethods: function(t){
+        var methodName,
+            eventMethods = {
+              preventDefault: 'isDefaultPrevented',
+              stopImmediatePropagation: 'isImmediatePropagationStopped',
+              stopPropagation: 'isPropagationStopped'
+            },
+            eventMethodResults = {}
+
+        $(document).on('click', 'div', function(event){
+          $.each(eventMethods, function(methodName, predicate){
+            if (event[methodName]) {
+              event[methodName]()
+              eventMethodResults[predicate] = event[predicate]()
+            } else {
+              console.warn("method not available: ", methodName)
+            }
+          })
+        })
+
+        click($('<span>').appendTo(this.el))
+
+        $.each(eventMethodResults, function(predicate, value){
+          t.assertTrue(value, predicate)
+        })
+      },
+
+      testIsDefaultPreventedOnAllEvents: function(t){
+        var isDefaultPrevented
+
+        $(this.el).on('click', function(event){
+          event.preventDefault()
+        })
+        $(document).on('click', function(event){
+          isDefaultPrevented = event.isDefaultPrevented()
+        })
+
+        click(this.el)
+        t.assertTrue(isDefaultPrevented)
+      },
+
+      testIsDefaultPreventedOnOriginalEventAfterDelegate: function(t){
+        var isDefaultPrevented
+
+        this.el.on('click', 'span', function(event){
+          event.preventDefault()
+        })
+        $(document).on('click', function(event){
+          isDefaultPrevented = event.isDefaultPrevented()
+        })
+
+        click($('<span>').appendTo(this.el))
+
+        t.assertTrue(isDefaultPrevented)
+      },
+
+      testStopImmediatePropagation: function(t){
+        var log = ''
+
+        this.el
+          .on('click', function(e){ log += 'A' })
+          .on('click', function(e){ log += 'B'; e.stopImmediatePropagation() })
+          .on('click', function(e){ log += 'C' })
+
+        $(document).on('click', function(e){ log += 'D' })
+
+        click(this.el)
+
+        t.assertEqual('AB', log)
+      },
+
+      testDelegateSelectorLookupDoesNotIncludeParent: function(t){
+        var fired = false
+
+        this.el
+          .addClass('offender')
+          .on('click', '.offender', function(){ fired = true })
+
+        click(this.el)
+
+        t.assertFalse(fired)
+      },
+
+      testFalseLiteralAsCallback: function(t){
+        var event = $.Event('click')
+
+        this.el.on('click', false)
+
+        this.el.trigger(event)
+        t.assertTrue(event.isDefaultPrevented())
+        t.assertTrue(event.isPropagationStopped())
+      },
+
+      testUnbindingFalseLiteral: function(t){
+        var event = $.Event('click'), fired
+
+        this.el
+          .on('click', function() { fired = true })
+          .on('click', false)
+          .off('click', false)
+
+        this.el.trigger(event)
+
+        t.assertTrue(fired)
+        t.assertFalse(event.isDefaultPrevented())
+        t.assertFalse(event.isPropagationStopped())
+      },
+
+      testFalseLiteralAsCallbackWithDataArgument: function(t){
+        var event = $.Event('click')
+
+        this.el.on('click', null, false)
+
+        this.el.trigger(event)
+        t.assertTrue(event.isDefaultPrevented())
+        t.assertTrue(event.isPropagationStopped())
+      },
+
+      testFalseLiteralAsCallbackForDelegation: function(t){
+        var span = $('<span>').appendTo(this.el),
+            event = $.Event('click')
+
+        this.el.on('click', 'span', false)
+
+        span.trigger(event)
+        t.assertTrue(event.isDefaultPrevented())
+        t.assertTrue(event.isPropagationStopped())
+      },
+
+      testFalseLiteralAsCallbackForDelegationWithDataArgument: function(t){
+        var span = $('<span>').appendTo(this.el),
+            event = $.Event('click')
+
+        this.el.on('click', 'span', null, false)
+
+        span.trigger(event)
+        t.assertTrue(event.isDefaultPrevented())
+        t.assertTrue(event.isPropagationStopped())
       }
+
     })
   })()
   </script>
