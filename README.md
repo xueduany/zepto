@@ -14,6 +14,9 @@ and documentation.
 
 Zepto.js is licensed under the terms of the MIT License.
 
+Want to give us money or a tip? Don't.
+Instead please donate to [charity: water](http://charitywater.org/).
+
 ## Building
 
 [![Build Status](https://secure.travis-ci.org/madrobby/zepto.png?branch=master)](http://travis-ci.org/madrobby/zepto)
@@ -53,27 +56,27 @@ Zepto modules are individual files in the "src/" directory.
 </tr></thead>
 <tbody>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/zepto.js#files">zepto</a></th>
+    <th><a href="src/zepto.js#files">zepto</a></th>
     <td>✔</td>
     <td>Core module; contains most methods</td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/event.js#files">event</a></th>
+    <th><a href="src/event.js#files">event</a></th>
     <td>✔</td>
     <td>Event handling via <code>on()</code> &amp; <code>off()</code></td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/detect.js#files">detect</a></th>
-    <td>✔</td>
+    <th><a href="src/detect.js#files">detect</a></th>
+    <td></td>
     <td>Provides <code>$.os</code> and <code>$.browser</code> information</td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/fx.js#files">fx</a></th>
-    <td>✔</td>
+    <th><a href="src/fx.js#files">fx</a></th>
+    <td></td>
     <td>The <code>animate()</code> method</td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/fx_methods.js#files">fx_methods</a></th>
+    <th><a href="src/fx_methods.js#files">fx_methods</a></th>
     <td></td>
     <td>
       Animated <code>show</code>, <code>hide</code>, <code>toggle</code>,
@@ -81,19 +84,17 @@ Zepto modules are individual files in the "src/" directory.
     </td>
   </tr>
   <tr>
-    <th><a
-href="https://github.com/madrobby/zepto/blob/master/src/ajax.js#files">ajax</a></th>
+    <th><a href="src/ajax.js#files">ajax</a></th>
     <td>✔</td>
     <td>XMLHttpRequest and JSONP functionality</td>
   </tr>
   <tr>
-    <th><a
-href="https://github.com/madrobby/zepto/blob/master/src/form.js#files">form</a></th>
+    <th><a href="src/form.js#files">form</a></th>
     <td>✔</td>
     <td>Serialize &amp; submit web forms</td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/assets.js#files">assets</a></th>
+    <th><a href="src/assets.js#files">assets</a></th>
     <td></td>
     <td>
       Experimental support for cleaning up iOS memory after removing
@@ -101,8 +102,7 @@ href="https://github.com/madrobby/zepto/blob/master/src/form.js#files">form</a><
     </td>
   </tr>
   <tr>
-    <th><a
-href="https://github.com/madrobby/zepto/blob/master/src/data.js#files">data</a></th>
+    <th><a href="src/data.js#files">data</a></th>
     <td></td>
     <td>
       A full-blown <code>data()</code> method, capable of storing arbitrary
@@ -110,8 +110,22 @@ href="https://github.com/madrobby/zepto/blob/master/src/data.js#files">data</a><
     </td>
   </tr>
   <tr>
-    <th><a
-href="https://github.com/madrobby/zepto/blob/master/src/selector.js#files">selector</a></th>
+    <th><a href="src/deferred.js#files">deferred</a></th>
+    <td></td>
+    <td>
+      Provides <code>$.Deferred</code> promises API.
+      Depends on the "callbacks" module.
+    </td>
+  </tr>
+  <tr>
+    <th><a href="src/callbacks.js#files">callbacks</a></th>
+    <td></td>
+    <td>
+      Provides <code>$.Callbacks</code> for use in "deferred" module.
+    </td>
+  </tr>
+  <tr>
+    <th><a href="src/selector.js#files">selector</a></th>
     <td></td>
     <td>
       Experimental <a href="http://api.jquery.com/category/selectors/jquery-selector-extensions/">jQuery
@@ -120,7 +134,7 @@ href="https://github.com/madrobby/zepto/blob/master/src/selector.js#files">selec
     </td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/touch.js#files">touch</a></th>
+    <th><a href="src/touch.js#files">touch</a></th>
     <td></td>
     <td>
       Fires tap– and swipe–related events on touch devices. This works with both
@@ -128,17 +142,17 @@ href="https://github.com/madrobby/zepto/blob/master/src/selector.js#files">selec
     </td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/gesture.js#files">gesture</a></th>
+    <th><a href="src/gesture.js#files">gesture</a></th>
     <td></td>
     <td>Fires pinch gesture events on touch devices</td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/stack.js#files">stack</a></th>
+    <th><a href="src/stack.js#files">stack</a></th>
     <td></td>
     <td>Provides <code>andSelf</code> &amp; <code>end()</code> chaining methods</td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/ios3.js#files">ios3</a></th>
+    <th><a href="src/ios3.js#files">ios3</a></th>
     <td></td>
     <td>
       String.prototype.trim and Array.prototype.reduce methods
@@ -146,7 +160,7 @@ href="https://github.com/madrobby/zepto/blob/master/src/selector.js#files">selec
     </td>
   </tr>
   <tr>
-    <th><a href="https://github.com/madrobby/zepto/blob/master/src/ie.js#files">ie</a></th>
+    <th><a href="src/ie.js#files">ie</a></th>
     <td></td>
     <td>
       Experimental support for Internet Explorer 10+ on desktop and Windows Phone 8.
@@ -157,6 +171,9 @@ href="https://github.com/madrobby/zepto/blob/master/src/selector.js#files">selec
 </table>
 
 ## Contributing
+
+Please read our [contribution guidelines](https://github.com/madrobby/zepto/blob/master/CONTRIBUTING.md)
+for information on how to contribute.
 
 Get in touch:
 
@@ -196,7 +213,7 @@ $ ./make test
 $ script/test
 ~~~
 
-To run manually run tests (all except for the ajax module) on a device,
+To manually run tests (all except for the "ajax" module) on a device,
 you can serve the whole Zepto folder on a web server and open
 `test/index.html` in the device's browser.
 

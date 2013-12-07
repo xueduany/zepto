@@ -189,8 +189,8 @@
 
       testAjaxGetWithParamsAndType: function(t){
         t.pause()
-        $.get('echo', { sample: 'data' }, t.reg.resumeHandler('success', function(response){
-          t.assertLine('GET ?{"sample":"data"}', response)
+        $.get('echo', { sample: 'plain' }, t.reg.resumeHandler('success', function(response){
+          t.assertLine('GET ?{"sample":"plain"}', response)
           t.assertLine("accept: text/plain", response)
         }), 'text')
       },
@@ -199,12 +199,12 @@
         t.pause()
         $(document).on('ajaxSuccess', function(e, xhr, settings, response){
           deferredResume(t, function(){
-            t.assertLine('GET ?{"sample":"data"}', response)
+            t.assertLine('GET ?{"sample":"plain"}', response)
             t.assertLine("accept: text/plain", response)
             t.assertEqualList('ajaxBeforeSend ajaxSend ajaxSuccess ajaxComplete', t.reg.events())
           })
         })
-        $.get('echo', { sample: 'data' }, 'text')
+        $.get('echo', { sample: 'plain' }, 'text')
       },
 
       testAjaxPost: function(t){
@@ -587,7 +587,7 @@
           'fixtures/ajax_load_simple.html',
           t.reg.resumeHandler('success', function(response, status, xhr){
             t.assertIdentical(testEl, this)
-            t.assertEqual("simple ajax load\n", response)
+            t.assertEqual("simple ajax load\n", response.replace(/\r\n|\r/,"\n"))
             t.assertEqual('simple ajax load', testEl.html().trim())
             t.assertEqual('success', status)
             t.assertIn('abort', xhr)
@@ -669,6 +669,19 @@
             t.assertUndefined(t.reg.target('ajaxSuccess'))
           })
         })
+      },
+
+      testAjaxLoadJavaScript: function (t) {
+        t.pause()
+        window.testValue = 0
+        var xhr = $.ajax({
+          url:'fixtures/ajax_load_javascript.js',
+          success: t.reg.resumeHandler('success', function(response){
+            // check that the javascript has loaded and executed.
+            t.assertEqual(window.testValue, 1)
+            delete window.testValue
+          })
+        })
       }
     })
 
@@ -694,6 +707,7 @@
       overrideMimeType: function(type) {
         this.responseHeaders['content-type'] = type
       },
+      withCredentials: false, 
       send: function(data) {
         this.data = data
       },
@@ -751,14 +765,25 @@
         })
       },
 
-      testDataTypeOptionSetsAcceptHeader: function(t) {
+      testDefaultAcceptHeader: function(t) {
         $.ajax()
-        t.assert(!MockXHR.last.headers.some(matchHeader('Accept')))
+        t.assert(MockXHR.last.headers.some(matchHeader('Accept', '*/*')))
+      },
 
+      testDataTypeOptionSetsAcceptHeader: function(t) {
         $.ajax({ dataType: 'json' })
         t.assert(MockXHR.last.headers.some(matchHeader('Accept', 'application/json')))
         // verifies overrideMimeType:
         t.assertEqual('application/json', MockXHR.last.getResponseHeader('content-type'))
+
+        $.ajax({ dataType: 'script' })
+        //check that the head matches all of those required for loading scripts.
+        t.assert(MockXHR.last.headers.some(matchHeader('Accept', 'text/javascript, application/javascript, application/x-javascript')))
+      },
+
+      testMimeTypeOptionOverride: function(t) {
+        $.ajax({ mimeType: 'text/plain' })
+        t.assertEqual('text/plain', MockXHR.last.getResponseHeader('content-type'))
       },
 
       testContentTypeOptionSetsContentTypeHeader: function(t) {
@@ -793,6 +818,14 @@
         $.ajax({ headers: {'X-Awesome': 'true'} })
         t.assert(MockXHR.last.headers.some(matchHeader('X-Requested-With', 'XMLHttpRequest')))
         t.assert(MockXHR.last.headers.some(matchHeader('X-Awesome', 'true')))
+      },
+
+      testXhrFieldsOptionSetsWithCredentialsProperty: function(t) {
+        var xhr = $.ajax({
+          url: 'http://example.com/foo',
+          xhrFields: { withCredentials: true }
+        })
+        t.assert(xhr.withCredentials)
       },
 
       testJSONdataType: function(t) {
@@ -948,6 +981,49 @@
         t.assertEqual('Hello', body.message)
         t.assertEqual('success', status)
         t.assertEqual(MockXHR.last, xhr)
+      },
+
+      testBeforeSendCanChangeUrl: function(t) {
+        var xhr = $.ajax({
+          url: 'one',
+          beforeSend: function(x, s) {
+            s.url = 'two'
+          }
+        })
+        t.assertEqual('two', xhr.url)
+      },
+
+      testBeforeSendCanChangeMethod: function(t) {
+        var xhr = $.ajax({
+          type: 'POST',
+          beforeSend: function(x, s) {
+            s.type = 'PUT'
+          }
+        })
+        t.assertEqual('PUT', xhr.method)
+      },
+
+      testBeforeSendCanAccessSerializedData: function(t) {
+        var xhr = $.ajax({
+          data: { a:'b' },
+          beforeSend: function(x, s) {
+            s.data = s.data.toUpperCase()
+          }
+        })
+        t.assertEqual('A=B', xhr.data)
+      },
+
+      testBeforeSendCanChangeAndAddHeaders: function(t) {
+        var xhr = $.ajax({
+          headers: { a:'b', c:'d' },
+          beforeSend: function(x, s) {
+            s.headers['a'] = 'B'
+            s.headers['e'] = 'f'
+          }
+        })
+        t.assert(xhr.headers.some(matchHeader('a', 'B')))
+        t.assert(xhr.headers.some(matchHeader('c', 'd')))
+        t.assert(xhr.headers.some(matchHeader('e', 'f')))
       },
 
       testBeforeSendAbortCallback: function(t) {
@@ -1144,7 +1220,43 @@
         }
         var result = $.param(data)
         result = decodeURIComponent(result)
-        t.assertEqual("a[]=b&a[]=c&a[][d]=e&a[][f][]=g&a[][f][]=h", result)
+        t.assertEqual("a[]=b&a[]=c&a[2][d]=e&a[2][f][]=g&a[2][f][]=h", result)
+      },
+
+      testParamComplexIssue850: function(t) {
+        var data = {
+          $push: { _:[ { name: 'bob', members:['aaa'] } ] }
+        }
+        var result = $.param(data)
+        result = decodeURIComponent(result)
+        t.assertEqual("$push[_][0][name]=bob&$push[_][0][members][]=aaa", result)
+      },
+
+      testParamComplexNested: function(t) {
+        var data = {
+          x: [
+            [1, { attr1: 2 } ],
+            3,
+            { attr1: 4 },
+            { attr1: 5, attr2: [ 6 ] },
+            [ 7, [8, 9] ],
+            { attr1: { attr2: [ [ 10 ] ] } }
+          ]
+        }
+        var result = $.param(data)
+        result = decodeURIComponent(result)
+        t.assertEqual(
+          [ "x[0][]=1"
+          , "x[0][1][attr1]=2"
+          , "x[]=3"
+          , "x[2][attr1]=4"
+          , "x[3][attr1]=5"
+          , "x[3][attr2][]=6"
+          , "x[4][]=7"
+          , "x[4][1][]=8"
+          , "x[4][1][]=9"
+          , "x[5][attr1][attr2][0][]=10"
+          ].join('&'), result)
       },
 
       testParamShallow: function(t) {

@@ -1,9 +1,10 @@
 express = require 'express'
 app     = express()
+path    = require 'path'
 
 module.exports = app
 
-project_root = __dirname.replace(/\/[^\/]+$/, '/')
+project_root = path.resolve(__dirname, '..')
 app.use express.static(project_root)
 app.use express.static(project_root + 'node_modules/mocha')
 app.use express.static(project_root + 'node_modules/chai')
@@ -20,6 +21,7 @@ dump = (obj) ->
   obj
 
 app.all '/test/echo', (req, res) ->
+  res.set 'Cache-Control', 'no-cache'
   res.send """
            #{req.method} ?#{dump(req.query)}
            content-type: #{mime(req)}
@@ -38,6 +40,7 @@ app.get '/test/jsonpBlah', (req, res) ->
   res.send 'blah()'
 
 app.get '/test/json', (req, res) ->
+  res.set 'Cache-Control', 'no-cache'
   if /json/.test req.headers['accept']
     if req.query.invalid
       res.set 'Content-Type', 'application/json'

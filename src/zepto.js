@@ -28,15 +28,29 @@ var Zepto = (function() {
     readyRE = /complete|loaded|interactive/,
     classSelectorRE = /^\.([\w-]+)$/,
     idSelectorRE = /^#([\w-]*)$/,
-    tagSelectorRE = /^[\w-]+$/,
+    simpleSelectorRE = /^[\w-]*$/,
     class2type = {},
     toString = class2type.toString,
     zepto = {},
     camelize, uniq,
-    tempParent = document.createElement('div')
+    tempParent = document.createElement('div'),
+    propMap = {
+      'tabindex': 'tabIndex',
+      'readonly': 'readOnly',
+      'for': 'htmlFor',
+      'class': 'className',
+      'maxlength': 'maxLength',
+      'cellspacing': 'cellSpacing',
+      'cellpadding': 'cellPadding',
+      'rowspan': 'rowSpan',
+      'colspan': 'colSpan',
+      'usemap': 'useMap',
+      'frameborder': 'frameBorder',
+      'contenteditable': 'contentEditable'
+    }
 
   zepto.matches = function(element, selector) {
-    if (!element || element.nodeType !== 1) return false
+    if (!selector || !element || element.nodeType !== 1) return false
     var matchesSelector = element.webkitMatchesSelector || element.mozMatchesSelector ||
                           element.oMatchesSelector || element.matchesSelector
     if (matchesSelector) return matchesSelector.call(element, selector)
@@ -159,14 +173,28 @@ var Zepto = (function() {
   // special cases).
   // This method can be overriden in plugins.
   zepto.init = function(selector, context) {
+    var dom
     // If nothing given, return an empty Zepto collection
     if (!selector) return zepto.Z()
+    // Optimize for string selectors
+    else if (typeof selector == 'string') {
+      selector = selector.trim()
+      // If it's a html fragment, create nodes from it
+      // Note: In both Chrome 21 and Firefox 15, DOM error 12
+      // is thrown if the fragment doesn't begin with <
+      if (selector[0] == '<' && fragmentRE.test(selector))
+        dom = zepto.fragment(selector, RegExp.$1, context), selector = null
+      // If there's a context, create a collection on that context first, and select
+      // nodes from there
+      else if (context !== undefined) return $(context).find(selector)
+      // If it's a CSS selector, use it to select nodes.
+      else dom = zepto.qsa(document, selector)
+    }
     // If a function is given, call it when the DOM is ready
     else if (isFunction(selector)) return $(document).ready(selector)
-    // If a Zepto collection is given, juts return it
+    // If a Zepto collection is given, just return it
     else if (zepto.isZ(selector)) return selector
     else {
-      var dom
       // normalize array if an array of nodes is given
       if (isArray(selector)) dom = compact(selector)
       // Wrap DOM nodes.
@@ -180,9 +208,9 @@ var Zepto = (function() {
       else if (context !== undefined) return $(context).find(selector)
       // And last but no least, if it's a CSS selector, use it to select nodes.
       else dom = zepto.qsa(document, selector)
-      // create a new Zepto collection from the nodes found
-      return zepto.Z(dom, selector)
     }
+    // create a new Zepto collection from the nodes found
+    return zepto.Z(dom, selector)
   }
 
   // `$` will be the base `Zepto` object. When calling this
@@ -221,14 +249,19 @@ var Zepto = (function() {
   // uses `document.querySelectorAll` and optimizes for some special cases, like `#id`.
   // This method can be overriden in plugins.
   zepto.qsa = function(element, selector){
-    var found
-    return (isDocument(element) && idSelectorRE.test(selector)) ?
-      ( (found = element.getElementById(RegExp.$1)) ? [found] : [] ) :
+    var found,
+        maybeID = selector[0] == '#',
+        maybeClass = !maybeID && selector[0] == '.',
+        nameOnly = maybeID || maybeClass ? selector.slice(1) : selector, // Ensure that a 1 char tag name still gets checked
+        isSimple = simpleSelectorRE.test(nameOnly)
+    return (isDocument(element) && isSimple && maybeID) ?
+      ( (found = element.getElementById(nameOnly)) ? [found] : [] ) :
       (element.nodeType !== 1 && element.nodeType !== 9) ? [] :
       slice.call(
-        classSelectorRE.test(selector) ? element.getElementsByClassName(RegExp.$1) :
-        tagSelectorRE.test(selector) ? element.getElementsByTagName(selector) :
-        element.querySelectorAll(selector)
+        isSimple && !maybeID ?
+          maybeClass ? element.getElementsByClassName(nameOnly) : // If it's simple, it could be a class
+          element.getElementsByTagName(selector) : // Or a tag
+          element.querySelectorAll(selector) // Or it's not simple, and we need to query all
       )
   }
 
@@ -262,6 +295,7 @@ var Zepto = (function() {
   // "null"  => null
   // "42"    => 42
   // "42.5"  => 42.5
+  // "08"    => "08"
   // JSON    => parse if valid
   // String  => self
   function deserializeValue(value) {
@@ -271,7 +305,7 @@ var Zepto = (function() {
         value == "true" ||
         ( value == "false" ? false :
           value == "null" ? null :
-          !isNaN(num = Number(value)) ? num :
+          !/^0/.test(value) && !isNaN(num = Number(value)) ? num :
           /^[\[\{]/.test(value) ? $.parseJSON(value) :
           value )
         : value
@@ -367,7 +401,9 @@ var Zepto = (function() {
     },
 
     ready: function(callback){
-      if (readyRE.test(document.readyState)) callback($)
+      // need to check if document.body exists for IE as that browser reports
+      // document ready when it hasn't yet created the body element
+      if (readyRE.test(document.readyState) && document.body) callback($)
       else document.addEventListener('DOMContentLoaded', function(){ callback($) }, false)
       return this
     },
@@ -578,6 +614,7 @@ var Zepto = (function() {
       return this.each(function(){ this.nodeType === 1 && setAttribute(this, name) })
     },
     prop: function(name, value){
+      name = propMap[name] || name
       return (value === undefined) ?
         (this[0] && this[0][name]) :
         this.each(function(idx){
@@ -676,11 +713,13 @@ var Zepto = (function() {
       return element ? this.indexOf($(element)[0]) : this.parent().children().indexOf(this[0])
     },
     hasClass: function(name){
+      if (!name) return false
       return emptyArray.some.call(this, function(el){
         return this.test(className(el))
       }, classRE(name))
     },
     addClass: function(name){
+      if (!name) return this
       return this.each(function(idx){
         classList = []
         var cls = className(this), newName = funcArg(this, name, idx, cls)
@@ -701,6 +740,7 @@ var Zepto = (function() {
       })
     },
     toggleClass: function(name, when){
+      if (!name) return this
       return this.each(function(idx){
         var $this = $(this), names = funcArg(this, name, idx, className(this))
         names.split(/\s+/g).forEach(function(klass){
@@ -716,6 +756,14 @@ var Zepto = (function() {
       return this.each(hasScrollTop ?
         function(){ this.scrollTop = value } :
         function(){ this.scrollTo(this.scrollX, value) })
+    },
+    scrollLeft: function(value){
+      if (!this.length) return
+      var hasScrollLeft = 'scrollLeft' in this[0]
+      if (value === undefined) return hasScrollLeft ? this[0].scrollLeft : this[0].pageXOffset
+      return this.each(hasScrollLeft ?
+        function(){ this.scrollLeft = value } :
+        function(){ this.scrollTo(value, this.scrollY) })
     },
     position: function() {
       if (!this.length) return

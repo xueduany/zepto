@@ -18,7 +18,7 @@
   function triggerAndReturn(context, eventName, data) {
     var event = $.Event(eventName)
     $(context).trigger(event, data)
-    return !event.defaultPrevented
+    return !event.isDefaultPrevented()
   }
 
   // trigger an Ajax "global" event
@@ -136,8 +136,9 @@
       return new window.XMLHttpRequest()
     },
     // MIME types mapping
+    // IIS returns Javascript as "application/x-javascript"
     accepts: {
-      script: 'text/javascript, application/javascript',
+      script: 'text/javascript, application/javascript, application/x-javascript',
       json:   jsonType,
       xml:    'application/xml, text/xml',
       html:   htmlType,
@@ -206,8 +207,8 @@
         xhr = settings.xhr(), abortTimeout
 
     if (!settings.crossDomain) baseHeaders['X-Requested-With'] = 'XMLHttpRequest'
-    if (mime) {
-      baseHeaders['Accept'] = mime
+    baseHeaders['Accept'] = mime || '*/*'
+    if (mime = settings.mimeType || mime) {
       if (mime.indexOf(',') > -1) mime = mime.split(',', 2)[0]
       xhr.overrideMimeType && xhr.overrideMimeType(mime)
     }
@@ -217,11 +218,11 @@
 
     xhr.onreadystatechange = function(){
       if (xhr.readyState == 4) {
-        xhr.onreadystatechange = empty;
+        xhr.onreadystatechange = empty
         clearTimeout(abortTimeout)
         var result, error = false
         if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304 || (xhr.status == 0 && protocol == 'file:')) {
-          dataType = dataType || mimeToDataType(xhr.getResponseHeader('content-type'))
+          dataType = dataType || mimeToDataType(settings.mimeType || xhr.getResponseHeader('content-type'))
           result = xhr.responseText
 
           try {
@@ -239,15 +240,17 @@
       }
     }
 
-    var async = 'async' in settings ? settings.async : true
-    xhr.open(settings.type, settings.url, async)
-
-    for (name in settings.headers) xhr.setRequestHeader(name, settings.headers[name])
-
     if (ajaxBeforeSend(xhr, settings) === false) {
       xhr.abort()
       return false
     }
+
+    if (settings.xhrFields) for (name in settings.xhrFields) xhr[name] = settings.xhrFields[name]
+
+    var async = 'async' in settings ? settings.async : true
+    xhr.open(settings.type, settings.url, async)
+
+    for (name in settings.headers) xhr.setRequestHeader(name, settings.headers[name])
 
     if (settings.timeout > 0) abortTimeout = setTimeout(function(){
         xhr.onreadystatechange = empty
@@ -332,10 +335,11 @@
   var escape = encodeURIComponent
 
   function serialize(params, obj, traditional, scope){
-    var type, array = $.isArray(obj)
+    var type, array = $.isArray(obj), hash = $.isPlainObject(obj)
     $.each(obj, function(key, value) {
       type = $.type(value)
-      if (scope) key = traditional ? scope : scope + '[' + (array ? '' : key) + ']'
+      if (scope) key = traditional ? scope :
+        scope + '[' + (hash || type == 'object' || type == 'array' ? key : '') + ']'
       // handle data in serializeArray() format
       if (!scope && array) params.add(value.name, value.value)
       // recurse into nested objects
